@@ -1,7 +1,6 @@
 <svelte:options tag="flashsuite-accounts" immutable={true} />
 
 <script>
-  import { ethers } from "ethers";
   import { onMount } from "svelte";
   import { Dashboards } from "./stores.mjs";
   import FlashAccountsContract from "../lib/contracts/FlashAccounts.mjs";
@@ -13,6 +12,19 @@
   let address = "";
   let balance = -1;
 
+  let dashboards = {};
+  let nd = 0;
+  let Alice = "";
+  let Bob = "";
+  let signer;
+  let launch = false;
+  let step;
+  let message;
+  let again = true;
+  function refresh() {
+    again = Boolean(!again);
+  }
+
   // NETWORK MUST BE KOVAN
   $: if (network && network != "kovan") {
     alert("FlashAccount is in beta mode ! only available on Kovan\nPlease switch to the Kovan testnet");
@@ -21,16 +33,26 @@
   // FIRST ADDRESS IS ALICE, SECOND ADDRESS BOB
   $: if (address) {
     if (Alice) {
-      if (Bob) {
-        // third account , reset by refreshing the browser
-        document.location.reload();
-      } else {
-        Bob = address;
-        message = "Destinator account connected, retreiving AAVE dashboard...";
+      if (address != Alice) {
+        if (step < 3) {
+          Alice = address;
+          message = "New origin account connected, retreiving AAVE dashboard...";
+          step12("New origin");
+        } else {
+          if (Bob) {
+            if (address != Bob) {
+              // third account , reset by refreshing the browser
+              document.location.reload();
+            }
+          } else {
+            Bob = address;
+            step56();
+          }
+        }
       }
     } else {
       Alice = address;
-      message = "Origin account connected, retreiving AAVE dashboard...";
+      step12("Origin");
     }
   }
 
@@ -39,87 +61,115 @@
     alert("ETH balance is to low to proceed, you need some ETH to pay gas");
   }
 
-  let dashboards = {};
-  let nd = 0;
-  let Alice = "";
-  let Bob = "";
-  let signer;
-  let launch = false;
-  let step = 1;
-  let message = "";
-  let again = true;
-  function refresh() {
-    again = Boolean(!again);
-  }
+  $: console.log("STEP:", step);
 
   Dashboards.subscribe((value) => {
     console.log("in subscribe", dashboards, value);
     dashboards = value;
-    console.log("in subscribe", dashboards, dashboards.length, step);
     nd = Object.keys(dashboards).length;
-    if (nd >= 1 && step == 1) {
-      launch = true;
-      message = "Ready to launch the migration ?";
-    }
-    if (nd >= 2 && step == 2) step3();
+    if (nd == 1 && step == 1) step23();
+    else if (nd == 2 && step == 5) step67();
+    else if (nd == 2 && step == 9) step10();
   });
 
   onMount(async function () {
     await FlashAccountsContract.Init(true);
+    step01();
   });
 
-  async function step1() {
-    console.log("STEP 1 <=");
-    step = 1;
+  // step0 initial
+  // step1  address Alice defined
+  // step2 dashboard Alice retrieved
+  // step3 launch
+  // step4.n transfers allowed
+  // step5 adress Bob defined
+  // step6 dashboard Bob retreived
+  // step7.n loans allowed
+  // step8 launch FlashLoan
+  // step9 end FlashLoan
+  // step10 dashboards refresh
+  async function step01() {
+    step = 0;
     message = "Please connect to the account you want to migrate from, with Metamask or another Wallet";
   }
-  async function step2() {
-    console.log("STEP 2 <=", dashboards[Alice]);
+  async function step12(_some) {
+    step = 1;
+    message = `${_some} account connected, retreiving AAVE dashboard...`;
+  }
+  async function step23() {
     step = 2;
-    launch = false;
-    console.log("D1",dashboards[Alice]);
+    message = "Ready to launch the migration ?";
+    launch = true;
+  }
+  async function step34() {
+    step = 3;
     const nd = dashboards[Alice].filter((pos) => pos.type == 0).length;
-
-    message = `Approve the transfer of your ${nd} deposits with your browser wallet`;
     try {
-      await FlashAccountsContract.approveTransfers(dashboards[Alice], signer);
-      message = "Please connect to the account you want to migrate to, with Metamask or another Wallet";
+      let ia = 0;
+      for await (const position of dashboards[Alice]) {
+        if (position.type > 0) {
+          message = `Approve the transfer of your ${++ia}/${nd} deposits with your browser wallet`;
+          console.log("POS",position, ia);
+          await FlashAccountsContract.approveTransfer(position, signer, ia);
+          console.log("APRES", ia);
+
+        }
+      }
+      // step45();
     } catch (e) {
       message = "Transaction failed";
       console.error(e);
     }
   }
-  async function step3() {
-    console.log("STEP 3 <=", dashboards[Alice]);
+  async function step45() {
+    step = 4;
+    message = "Please connect to the account you want to migrate to, with Metamask or another Wallet";
+  }
+  async function step56() {
+    step = 5;
+    message = "Destinator account connected, retreiving AAVE dashboard...";
+  }
+  async function step67() {
     const nl = dashboards[Alice].filter((pos) => pos.type != 0).length;
 
-    message = `Approve the transfer of your ${nl} loans with your browser wallet`;
+    step = 6;
     try {
-      await FlashAccountsContract.approveLoans(dashboards[Alice], signer);
-      step4();
+      let il = 0;
+      for await (const position of dashboards[Alice]) {
+        if (position.type == 0) {
+          message = `Approve the transfer of your ${++il}/${nl} loans with your browser wallet`;
+          await FlashAccountsContract.approveTransfer(position, signer, il);
+        }
+      }
     } catch (e) {
       message = "Transaction failed";
       console.error(e);
     }
+    step78();
   }
-  async function step4() {
-    console.log("STEP 4 <=");
-    step = 4;
+  async function step78() {
+    step = 7;
+    step89();
+  }
+  async function step89() {
+    step = 8;
     message = "Approve the Flash Loan that will launch all the migration ";
     try {
       await FlashAccountsContract.callFlashLoan(dashboards[Alice], Alice, Bob, signer);
-      step5();
+      step910();
     } catch (e) {
       message = "Transaction failed";
       console.error(e);
     }
   }
-  async function step5() {
-    console.log("STEP 5 <=");
-    step = 5;
+  async function step910() {
+    step = 9;
     message = "Flash Loan succeeded !  refreshing Dashboards";
     refresh();
-    step = 6;
+  }
+  async function step10() {
+    step = 10;
+    message = "Account trnasfered !";
   }
 </script>
 
@@ -131,7 +181,7 @@
   <p class="message">{message}</p>
   <p>
     {#if launch}
-      <button on:click={step2}>LAUNCH MIGRATION</button>
+      <button on:click={step34}>LAUNCH MIGRATION</button>
     {/if}
   </p>
 
@@ -164,6 +214,7 @@
   <hr />
   <p>
     <Metamask bind:address bind:balance bind:network bind:signer />
+    <small>step {step}</small>
   </p>
 </main>
 
