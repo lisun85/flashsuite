@@ -17,7 +17,7 @@
   let Alice = "";
   let Bob = "";
   let signer;
-  let launch = false;
+  let startMigration = false;
   let step;
   let message;
   let again = true;
@@ -67,9 +67,9 @@
     console.log("in subscribe", dashboards, value);
     dashboards = value;
     nd = Object.keys(dashboards).length;
-    if (nd == 1 && step == 1) step23();
+    if (nd == 1 && step <= 2) step23();
     else if (nd == 2 && step == 5) step67();
-    else if (nd == 2 && step == 9) step10();
+    else if (nd == 2 && step == 8) step9();
   });
 
   onMount(async function () {
@@ -80,14 +80,13 @@
   // step0 initial
   // step1  address Alice defined
   // step2 dashboard Alice retrieved
-  // step3 launch
+  // step3 start migration
   // step4.n transfers allowed
   // step5 adress Bob defined
   // step6 dashboard Bob retreived
-  // step7.n loans allowed
-  // step8 launch FlashLoan
-  // step9 end FlashLoan
-  // step10 dashboards refresh
+  // step7.n loans allowed - Approve Flashloan
+  // step8 FlashLoan succeeded
+  // step9 dashboards refresh
   async function step01() {
     step = 0;
     message = "Please connect to the account you want to migrate from, with Metamask or another Wallet";
@@ -95,27 +94,26 @@
   async function step12(_some) {
     step = 1;
     message = `${_some} account connected, retreiving AAVE dashboard...`;
+    startMigration = false;
   }
   async function step23() {
     step = 2;
-    message = "Ready to launch the migration ?";
-    launch = true;
+    message = "Ready to start the migration ?";
+    startMigration = true;
   }
   async function step34() {
     step = 3;
+    startMigration = false;
     const nd = dashboards[Alice].filter((pos) => pos.type == 0).length;
     try {
       let ia = 0;
       for await (const position of dashboards[Alice]) {
-        if (position.type > 0) {
-          message = `Approve the transfer of your ${++ia}/${nd} deposits with your browser wallet`;
-          console.log("POS",position, ia);
+        if (position.type == 0) {
+          message = `Approve the transfer of your ${++ia}/${nd} deposit with your browser wallet`;
           await FlashAccountsContract.approveTransfer(position, signer, ia);
-          console.log("APRES", ia);
-
         }
       }
-      // step45();
+      step45();
     } catch (e) {
       message = "Transaction failed";
       console.error(e);
@@ -131,45 +129,40 @@
   }
   async function step67() {
     const nl = dashboards[Alice].filter((pos) => pos.type != 0).length;
-
     step = 6;
     try {
       let il = 0;
       for await (const position of dashboards[Alice]) {
-        if (position.type == 0) {
-          message = `Approve the transfer of your ${++il}/${nl} loans with your browser wallet`;
-          await FlashAccountsContract.approveTransfer(position, signer, il);
+        if (position.type > 0) {
+          message = `Approve the transfer of your ${++il}/${nl} loan with your browser wallet`;
+          await FlashAccountsContract.approveLoan(position, signer, il);
         }
       }
+      step78();
     } catch (e) {
       message = "Transaction failed";
       console.error(e);
     }
-    step78();
   }
   async function step78() {
     step = 7;
-    step89();
-  }
-  async function step89() {
-    step = 8;
-    message = "Approve the Flash Loan that will launch all the migration ";
+    message = "Approve Flash Loan";
     try {
       await FlashAccountsContract.callFlashLoan(dashboards[Alice], Alice, Bob, signer);
-      step910();
+      step89();
     } catch (e) {
       message = "Transaction failed";
       console.error(e);
     }
   }
-  async function step910() {
-    step = 9;
+  async function step89() {
+    step = 8;
     message = "Flash Loan succeeded !  refreshing Dashboards";
     refresh();
   }
-  async function step10() {
-    step = 10;
-    message = "Account trnasfered !";
+  async function step9() {
+    step = 9;
+    message = "Account migrated !";
   }
 </script>
 
@@ -180,8 +173,8 @@
 
   <p class="message">{message}</p>
   <p>
-    {#if launch}
-      <button on:click={step34}>LAUNCH MIGRATION</button>
+    {#if startMigration}
+      <button on:click={step34}>START MIGRATION</button>
     {/if}
   </p>
 

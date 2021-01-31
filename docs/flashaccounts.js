@@ -22646,12 +22646,13 @@ var app = (function () {
     // TX1 : Get aTokens allowance
     ////////////////////////////////////////////////////////////////////////////////////////////////////////
     FlashAccounts.approveTransfer = async function (_position, _signer, _index = 1) {
-      console.log("FlashAccounts.approveTransfer", _position, _index);
-      const aTokenContract = new Contract(_position.address, ERC20.ABI, _signer);
-      const tx = await aTokenContract.approve(FlashAccounts.contract.address, _plus(_position.amount));
+      if (_position.type == 0) {
+        const aTokenContract = new Contract(_position.address, ERC20.ABI, _signer);
+        const tx = await aTokenContract.approve(FlashAccounts.contract.address, _plus(_position.amount));
 
-      if (FlashAccounts.log) console.log(`TX1.${_index} allow transfer ${_bal(_position.amount, _position.decimals)} ${_position.symbol}\n${ethscan}/tx/${tx.hash}`);
-      console.log(await tx.wait());
+        if (FlashAccounts.log) console.log(`TX1.${_index} allow transfer ${_bal(_position.amount, _position.decimals)} ${_position.symbol}\n${ethscan}/tx/${tx.hash}`);
+        console.log(await tx.wait());
+      }
     };
     FlashAccounts.approveTransfers = async function (_dashboard, _signer) {
       console.log("FlashAccounts.approveTransfers");
@@ -22669,18 +22670,19 @@ var app = (function () {
     // TX2 : Get Credit Delegation approval 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////
     FlashAccounts.approveLoan = async function (_position, _signer, _index = 1) {
-      console.log("FlashAccounts.approveLoan", _position, _index);
-      let debtTokenContract;
-      if (_position.type == 1) {
-        debtTokenContract = new Contract(_position.address, IStableDebtToken.ABI, _signer);
-      }
-      if (_position.type == 2) {
-        debtTokenContract = new Contract(_position.address, IVariableDebtToken.ABI, _signer);
-      }
-      const tx2 = await debtTokenContract.approveDelegation(FlashAccounts.contract.address, _plus(_position.amount));
+      if (_position.type > 0) {
+        let debtTokenContract;
+        if (_position.type == 1) {
+          debtTokenContract = new Contract(_position.address, IStableDebtToken.ABI, _signer);
+        }
+        if (_position.type == 2) {
+          debtTokenContract = new Contract(_position.address, IVariableDebtToken.ABI, _signer);
+        }
+        const tx2 = await debtTokenContract.approveDelegation(FlashAccounts.contract.address, _plus(_position.amount));
 
-      if (FlashAccounts.log) console.log(`TX2.${++_index} Allow borrow ${_bal(_position.amount, _position.decimals)} ${_position.symbol}\n${ethscan}/tx/${tx2.hash}`);
-      console.log(await tx2.wait());
+        if (FlashAccounts.log) console.log(`TX2.${++_index} Allow borrow ${_bal(_position.amount, _position.decimals)} ${_position.symbol}\n${ethscan}/tx/${tx2.hash}`);
+        console.log(await tx2.wait());
+      }
     };
     FlashAccounts.approveLoans = async function (_dashboard, _signer) {
       console.log("FlashAccounts.approveLoans");
@@ -24434,7 +24436,7 @@ var app = (function () {
     const { Object: Object_1, console: console_1$2 } = globals;
     const file$2 = "svelte/flashaccounts.svelte";
 
-    // (183:4) {#if launch}
+    // (176:4) {#if startMigration}
     function create_if_block_3(ctx) {
     	let button;
     	let mounted;
@@ -24443,8 +24445,8 @@ var app = (function () {
     	const block = {
     		c: function create() {
     			button = element("button");
-    			button.textContent = "LAUNCH MIGRATION";
-    			add_location(button, file$2, 183, 6, 4965);
+    			button.textContent = "START MIGRATION";
+    			add_location(button, file$2, 176, 6, 4855);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, button, anchor);
@@ -24466,14 +24468,14 @@ var app = (function () {
     		block,
     		id: create_if_block_3.name,
     		type: "if",
-    		source: "(183:4) {#if launch}",
+    		source: "(176:4) {#if startMigration}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (190:6) {#if Alice}
+    // (183:6) {#if Alice}
     function create_if_block_2(ctx) {
     	let tr;
     	let td;
@@ -24495,10 +24497,10 @@ var app = (function () {
     			h2.textContent = "Origin AAVE DashBoard";
     			t1 = space();
     			create_component(dashboard.$$.fragment);
-    			add_location(h2, file$2, 192, 12, 5134);
+    			add_location(h2, file$2, 185, 12, 5023);
     			attr_dev(td, "class", "cadre");
-    			add_location(td, file$2, 191, 11, 5103);
-    			add_location(tr, file$2, 190, 8, 5088);
+    			add_location(td, file$2, 184, 11, 4992);
+    			add_location(tr, file$2, 183, 8, 4977);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, tr, anchor);
@@ -24532,14 +24534,14 @@ var app = (function () {
     		block,
     		id: create_if_block_2.name,
     		type: "if",
-    		source: "(190:6) {#if Alice}",
+    		source: "(183:6) {#if Alice}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (198:6) {#if Bob}
+    // (191:6) {#if Bob}
     function create_if_block_1$1(ctx) {
     	let tr;
     	let td;
@@ -24561,10 +24563,10 @@ var app = (function () {
     			h2.textContent = "Destination AAVE DashBoard";
     			t1 = space();
     			create_component(dashboard.$$.fragment);
-    			add_location(h2, file$2, 200, 12, 5316);
+    			add_location(h2, file$2, 193, 12, 5205);
     			attr_dev(td, "class", "cadre");
-    			add_location(td, file$2, 199, 11, 5285);
-    			add_location(tr, file$2, 198, 8, 5270);
+    			add_location(td, file$2, 192, 11, 5174);
+    			add_location(tr, file$2, 191, 8, 5159);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, tr, anchor);
@@ -24598,14 +24600,14 @@ var app = (function () {
     		block,
     		id: create_if_block_1$1.name,
     		type: "if",
-    		source: "(198:6) {#if Bob}",
+    		source: "(191:6) {#if Bob}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (189:4) {#key again}
+    // (182:4) {#key again}
     function create_key_block(ctx) {
     	let t;
     	let if_block1_anchor;
@@ -24697,14 +24699,14 @@ var app = (function () {
     		block,
     		id: create_key_block.name,
     		type: "key",
-    		source: "(189:4) {#key again}",
+    		source: "(182:4) {#key again}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (211:24) {#if nd > 1}
+    // (204:24) {#if nd > 1}
     function create_if_block$2(ctx) {
     	let t;
 
@@ -24724,7 +24726,7 @@ var app = (function () {
     		block,
     		id: create_if_block$2.name,
     		type: "if",
-    		source: "(211:24) {#if nd > 1}",
+    		source: "(204:24) {#if nd > 1}",
     		ctx
     	});
 
@@ -24768,7 +24770,7 @@ var app = (function () {
     	let current;
     	let mounted;
     	let dispose;
-    	let if_block0 = /*launch*/ ctx[8] && create_if_block_3(ctx);
+    	let if_block0 = /*startMigration*/ ctx[8] && create_if_block_3(ctx);
     	let key_block = create_key_block(ctx);
     	let if_block1 = /*nd*/ ctx[6] > 1 && create_if_block$2(ctx);
 
@@ -24849,20 +24851,20 @@ var app = (function () {
     			if (img.src !== (img_src_value = "logo.png")) attr_dev(img, "src", img_src_value);
     			attr_dev(img, "width", "600");
     			attr_dev(img, "alt", "FlashSuite");
-    			add_location(img, file$2, 176, 2, 4745);
-    			add_location(strong, file$2, 177, 5, 4802);
-    			add_location(p0, file$2, 177, 2, 4799);
-    			add_location(hr0, file$2, 178, 2, 4893);
+    			add_location(img, file$2, 169, 2, 4627);
+    			add_location(strong, file$2, 170, 5, 4684);
+    			add_location(p0, file$2, 170, 2, 4681);
+    			add_location(hr0, file$2, 171, 2, 4775);
     			attr_dev(p1, "class", "message");
-    			add_location(p1, file$2, 180, 2, 4903);
-    			add_location(p2, file$2, 181, 2, 4938);
-    			add_location(table, file$2, 187, 2, 5037);
-    			add_location(button, file$2, 209, 4, 5464);
-    			add_location(p3, file$2, 208, 2, 5456);
-    			add_location(hr1, file$2, 213, 2, 5557);
-    			add_location(small, file$2, 216, 4, 5642);
-    			add_location(p4, file$2, 214, 2, 5566);
-    			add_location(main, file$2, 175, 0, 4736);
+    			add_location(p1, file$2, 173, 2, 4785);
+    			add_location(p2, file$2, 174, 2, 4820);
+    			add_location(table, file$2, 180, 2, 4926);
+    			add_location(button, file$2, 202, 4, 5353);
+    			add_location(p3, file$2, 201, 2, 5345);
+    			add_location(hr1, file$2, 206, 2, 5446);
+    			add_location(small, file$2, 209, 4, 5531);
+    			add_location(p4, file$2, 207, 2, 5455);
+    			add_location(main, file$2, 168, 0, 4618);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -24908,7 +24910,7 @@ var app = (function () {
     		p: function update(ctx, [dirty]) {
     			if (!current || dirty & /*message*/ 512) set_data_dev(t4, /*message*/ ctx[9]);
 
-    			if (/*launch*/ ctx[8]) {
+    			if (/*startMigration*/ ctx[8]) {
     				if (if_block0) {
     					if_block0.p(ctx, dirty);
     				} else {
@@ -25017,7 +25019,7 @@ var app = (function () {
     	let Alice = "";
     	let Bob = "";
     	let signer;
-    	let launch = false;
+    	let startMigration = false;
     	let step;
     	let message;
     	let again = true;
@@ -25030,7 +25032,7 @@ var app = (function () {
     		console.log("in subscribe", dashboards, value);
     		dashboards = value;
     		$$invalidate(6, nd = Object.keys(dashboards).length);
-    		if (nd == 1 && step == 1) step23(); else if (nd == 2 && step == 5) step67(); else if (nd == 2 && step == 9) step10();
+    		if (nd == 1 && step <= 2) step23(); else if (nd == 2 && step == 5) step67(); else if (nd == 2 && step == 8) step9();
     	});
 
     	onMount(async function () {
@@ -25041,14 +25043,13 @@ var app = (function () {
     	// step0 initial
     	// step1  address Alice defined
     	// step2 dashboard Alice retrieved
-    	// step3 launch
+    	// step3 start migration
     	// step4.n transfers allowed
     	// step5 adress Bob defined
     	// step6 dashboard Bob retreived
-    	// step7.n loans allowed
-    	// step8 launch FlashLoan
-    	// step9 end FlashLoan
-    	// step10 dashboards refresh
+    	// step7.n loans allowed - Approve Flashloan
+    	// step8 FlashLoan succeeded
+    	// step9 dashboards refresh
     	async function step01() {
     		$$invalidate(5, step = 0);
     		$$invalidate(9, message = "Please connect to the account you want to migrate from, with Metamask or another Wallet");
@@ -25057,31 +25058,33 @@ var app = (function () {
     	async function step12(_some) {
     		$$invalidate(5, step = 1);
     		$$invalidate(9, message = `${_some} account connected, retreiving AAVE dashboard...`);
+    		$$invalidate(8, startMigration = false);
     	}
 
     	async function step23() {
     		$$invalidate(5, step = 2);
-    		$$invalidate(9, message = "Ready to launch the migration ?");
-    		$$invalidate(8, launch = true);
+    		$$invalidate(9, message = "Ready to start the migration ?");
+    		$$invalidate(8, startMigration = true);
     	}
 
     	async function step34() {
     		$$invalidate(5, step = 3);
+    		$$invalidate(8, startMigration = false);
     		const nd = dashboards[Alice].filter(pos => pos.type == 0).length;
 
     		try {
     			let ia = 0;
 
     			for await (const position of dashboards[Alice]) {
-    				if (position.type > 0) {
-    					$$invalidate(9, message = `Approve the transfer of your ${++ia}/${nd} deposits with your browser wallet`);
-    					console.log("POS", position, ia);
+    				if (position.type == 0) {
+    					$$invalidate(9, message = `Approve the transfer of your ${++ia}/${nd} deposit with your browser wallet`);
     					await FlashAccounts.approveTransfer(position, signer, ia);
-    					console.log("APRES", ia);
     				}
     			}
+
+    			step45();
     		} catch(e) {
-    			$$invalidate(9, message = "Transaction failed"); // step45();
+    			$$invalidate(9, message = "Transaction failed");
     			console.error(e);
     		}
     	}
@@ -25104,46 +25107,41 @@ var app = (function () {
     			let il = 0;
 
     			for await (const position of dashboards[Alice]) {
-    				if (position.type == 0) {
-    					$$invalidate(9, message = `Approve the transfer of your ${++il}/${nl} loans with your browser wallet`);
-    					await FlashAccounts.approveTransfer(position, signer, il);
+    				if (position.type > 0) {
+    					$$invalidate(9, message = `Approve the transfer of your ${++il}/${nl} loan with your browser wallet`);
+    					await FlashAccounts.approveLoan(position, signer, il);
     				}
     			}
+
+    			step78();
     		} catch(e) {
     			$$invalidate(9, message = "Transaction failed");
     			console.error(e);
     		}
-
-    		step78();
     	}
 
     	async function step78() {
     		$$invalidate(5, step = 7);
-    		step89();
-    	}
-
-    	async function step89() {
-    		$$invalidate(5, step = 8);
-    		$$invalidate(9, message = "Approve the Flash Loan that will launch all the migration ");
+    		$$invalidate(9, message = "Approve Flash Loan");
 
     		try {
     			await FlashAccounts.callFlashLoan(dashboards[Alice], Alice, Bob, signer);
-    			step910();
+    			step89();
     		} catch(e) {
     			$$invalidate(9, message = "Transaction failed");
     			console.error(e);
     		}
     	}
 
-    	async function step910() {
-    		$$invalidate(5, step = 9);
+    	async function step89() {
+    		$$invalidate(5, step = 8);
     		$$invalidate(9, message = "Flash Loan succeeded !  refreshing Dashboards");
     		refresh();
     	}
 
-    	async function step10() {
-    		$$invalidate(5, step = 10);
-    		$$invalidate(9, message = "Account trnasfered !");
+    	async function step9() {
+    		$$invalidate(5, step = 9);
+    		$$invalidate(9, message = "Account migrated !");
     	}
 
     	const writable_props = [];
@@ -25186,7 +25184,7 @@ var app = (function () {
     		Alice,
     		Bob,
     		signer,
-    		launch,
+    		startMigration,
     		step,
     		message,
     		again,
@@ -25200,8 +25198,7 @@ var app = (function () {
     		step67,
     		step78,
     		step89,
-    		step910,
-    		step10
+    		step9
     	});
 
     	$$self.$inject_state = $$props => {
@@ -25213,7 +25210,7 @@ var app = (function () {
     		if ("Alice" in $$props) $$invalidate(3, Alice = $$props.Alice);
     		if ("Bob" in $$props) $$invalidate(4, Bob = $$props.Bob);
     		if ("signer" in $$props) $$invalidate(7, signer = $$props.signer);
-    		if ("launch" in $$props) $$invalidate(8, launch = $$props.launch);
+    		if ("startMigration" in $$props) $$invalidate(8, startMigration = $$props.startMigration);
     		if ("step" in $$props) $$invalidate(5, step = $$props.step);
     		if ("message" in $$props) $$invalidate(9, message = $$props.message);
     		if ("again" in $$props) $$invalidate(10, again = $$props.again);
@@ -25280,7 +25277,7 @@ var app = (function () {
     		step,
     		nd,
     		signer,
-    		launch,
+    		startMigration,
     		message,
     		again,
     		refresh,
