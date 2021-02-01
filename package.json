@@ -39,6 +39,8 @@
   },
   "dependencies": {
     "@metamask/detect-provider": "^1.2.0",
+    "@rollup/plugin-json": "^4.1.0",
+    "@uniswap/sdk": "^3.0.3",
     "axios": "^0.21.1",
     "graphql-cli": "^4.1.0"
   }
